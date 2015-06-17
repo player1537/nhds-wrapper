@@ -2,6 +2,8 @@ import struct
 import csv
 import sys
 import collections
+import datetime
+import calendar
 
 """Parses and gives a unified access to all the different NHDS datasets
 
@@ -15,45 +17,45 @@ at:
 """
 
 class Entry:
-    fmt = ((1,  2, "Survey Year", "year_end"),
-           (3,  1, "Newborn status"),
-           (4,  1, "Units for age"),
-           (5,  2, "Age"),
-           (7,  1, "Sex"),
-           (8,  1, "Race"),
-           (9,  1, "Marital status"),
-           (10, 2, "Discharge month", "month"),
-           (12, 1, "Discharge status"),
-           (13, 4, "Days of care"),
-           (17, 1, "Length of stay flag"),
-           (18, 1, "Geographic region", "region"),
-           (19, 1, "Number of beds"),
-           (20, 1, "Hospital ownership"),
-           (21, 5, "Analysis weight", "weight"),
-           (26, 2, "First 2 digits of survey year", "year_begin"),
-           (28, 5, "Diagnosis code #1", "dx_cd"),
-           (33, 5, "Diagnosis code #2"),
-           (38, 5, "Diagnosis code #3"),
-           (43, 5, "Diagnosis code #4"),
-           (48, 5, "Diagnosis code #5"),
-           (53, 5, "Diagnosis code #6"),
-           (58, 5, "Diagnosis code #7"),
-           (63, 4, "Procedure code #1"),
-           (67, 4, "Procedure code #2"),
-           (71, 4, "Procedure code #3"),
-           (75, 4, "Procedure code #4"),
-           (79, 2, "Primary expected source of payment"),
-           (81, 2, "Secondary expected source of payment"),
-           (83, 3, "Diagnosis-Related Groups"),
-           (86, 1, "Type of admission"),
-           (87, 2, "Source of admission"),
-           (89, 5, "Admitting diagnosis"),
-           (94, 2, "Newline"))
+    fmt = ((2, "Survey Year", "year_end"),
+           (1, "Newborn status"),
+           (1, "Units for age"),
+           (2, "Age"),
+           (1, "Sex"),
+           (1, "Race"),
+           (1, "Marital status"),
+           (2, "Discharge month", "month"),
+           (1, "Discharge status"),
+           (4, "Days of care"),
+           (1, "Length of stay flag"),
+           (1, "Geographic region", "region"),
+           (1, "Number of beds"),
+           (1, "Hospital ownership"),
+           (5, "Analysis weight", "weight"),
+           (2, "First 2 digits of survey year", "year_begin"),
+           (5, "Diagnosis code #1", "dx_cd"),
+           (5, "Diagnosis code #2"),
+           (5, "Diagnosis code #3"),
+           (5, "Diagnosis code #4"),
+           (5, "Diagnosis code #5"),
+           (5, "Diagnosis code #6"),
+           (5, "Diagnosis code #7"),
+           (4, "Procedure code #1"),
+           (4, "Procedure code #2"),
+           (4, "Procedure code #3"),
+           (4, "Procedure code #4"),
+           (2, "Primary expected source of payment"),
+           (2, "Secondary expected source of payment"),
+           (3, "Diagnosis-Related Groups"),
+           (1, "Type of admission"),
+           (2, "Source of admission"),
+           (5, "Admitting diagnosis"),
+           (2, "Newline"))
 
-    fmtstring = "".join(str(tup[1]) + "s" for tup in fmt)
+    fmtstring = "".join(str(tup[0]) + "s" for tup in fmt)
     fmtmapping = { name: i
                    for i, tup in enumerate(fmt)
-                   for name in tup[2:] }
+                   for name in tup[1:] }
 
     def parse_line(self, line):
         self.fields = struct.unpack(Entry.fmtstring, line)
@@ -70,6 +72,7 @@ def main(input_filename, search="174"):
         "3": "South",
         "4": "West"
     })
+    counts = collections.defaultdict(int)
     with open(input_filename, "r") as f:
         for line in f:
             entry.parse_line(line)
@@ -83,11 +86,23 @@ def main(input_filename, search="174"):
             diagnosis_names = ["Diagnosis code #" + str(i) for i in range(1, 8)]
             diagnosis_codes = [entry[name] for name in diagnosis_names]
 
-            writer.writerow([
+            if 0: writer.writerow([
                 date,
                 region_mapping[region],
                 number_of_discharges
-            ] + diagnosis_codes)
+            ])
+
+            counts[date] += number_of_discharges
+
+    for date_str in sorted(counts.keys()):
+        date = datetime.datetime.strptime(date_str, "%Y%m")
+
+        if date.year != 2009 or date.month < 4:
+            continue
+
+        days_in_month = calendar.monthrange(date.year, date.month)[1]
+        for _ in range(days_in_month):
+            print counts[date_str] / float(days_in_month)
 
 if __name__ == "__main__":
     import sys
