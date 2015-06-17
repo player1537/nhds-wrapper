@@ -16,55 +16,95 @@ at:
 
 """
 
+fmt = (
+    (("09", ),
+     2, "Survey Year", "year_end"),
+    (("09", ),
+     1, "Newborn status"),
+    (("09", ),
+     1, "Units for age"),
+    (("09", ),
+     2, "Age"),
+    (("09", ),
+     1, "Sex"),
+    (("09", ),
+     1, "Race"),
+    (("09", ),
+     1, "Marital status"),
+    (("09", ),
+     2, "Discharge month", "month"),
+    (("09", ),
+     1, "Discharge status"),
+    (("09", ),
+     4, "Days of care"),
+    (("09", ),
+     1, "Length of stay flag"),
+    (("09", ),
+     1, "Geographic region", "region"),
+    (("09", ),
+     1, "Number of beds"),
+    (("09", ),
+     1, "Hospital ownership"),
+    (("09", ),
+     5, "Analysis weight", "weight"),
+    (("09", ),
+     2, "First 2 digits of survey year", "year_begin"),
+    (("09", ),
+     5, "Diagnosis code #1", "dx_cd"),
+    (("09", ),
+     5, "Diagnosis code #2"),
+    (("09", ),
+     5, "Diagnosis code #3"),
+    (("09", ),
+     5, "Diagnosis code #4"),
+    (("09", ),
+     5, "Diagnosis code #5"),
+    (("09", ),
+     5, "Diagnosis code #6"),
+    (("09", ),
+     5, "Diagnosis code #7"),
+    (("09", ),
+     4, "Procedure code #1"),
+    (("09", ),
+     4, "Procedure code #2"),
+    (("09", ),
+     4, "Procedure code #3"),
+    (("09", ),
+     4, "Procedure code #4"),
+    (("09", ),
+     2, "Primary expected source of payment"),
+    (("09", ),
+     2, "Secondary expected source of payment"),
+    (("09", ),
+     3, "Diagnosis-Related Groups"),
+    (("09", ),
+     1, "Type of admission"),
+    (("09", ),
+     2, "Source of admission"),
+    (("09", ),
+     5, "Admitting diagnosis"),
+    (("09", ),
+     2, "Newline")
+)
+
 class Entry:
-    fmt = ((2, "Survey Year", "year_end"),
-           (1, "Newborn status"),
-           (1, "Units for age"),
-           (2, "Age"),
-           (1, "Sex"),
-           (1, "Race"),
-           (1, "Marital status"),
-           (2, "Discharge month", "month"),
-           (1, "Discharge status"),
-           (4, "Days of care"),
-           (1, "Length of stay flag"),
-           (1, "Geographic region", "region"),
-           (1, "Number of beds"),
-           (1, "Hospital ownership"),
-           (5, "Analysis weight", "weight"),
-           (2, "First 2 digits of survey year", "year_begin"),
-           (5, "Diagnosis code #1", "dx_cd"),
-           (5, "Diagnosis code #2"),
-           (5, "Diagnosis code #3"),
-           (5, "Diagnosis code #4"),
-           (5, "Diagnosis code #5"),
-           (5, "Diagnosis code #6"),
-           (5, "Diagnosis code #7"),
-           (4, "Procedure code #1"),
-           (4, "Procedure code #2"),
-           (4, "Procedure code #3"),
-           (4, "Procedure code #4"),
-           (2, "Primary expected source of payment"),
-           (2, "Secondary expected source of payment"),
-           (3, "Diagnosis-Related Groups"),
-           (1, "Type of admission"),
-           (2, "Source of admission"),
-           (5, "Admitting diagnosis"),
-           (2, "Newline"))
+    def __init__(self, line):
+        year = line[:2]
 
-    fmtstring = "".join(str(tup[0]) + "s" for tup in fmt)
-    fmtmapping = { name: i
-                   for i, tup in enumerate(fmt)
-                   for name in tup[1:] }
+        self.fmtstring = "".join(str(tup[1]) + "s"
+                                 for tup in fmt
+                                 if year in tup[0])
+        self.fmtmapping = { name: i
+                       for i, tup in enumerate(fmt)
+                       for name in tup[2:]
+                       if year in tup[0] }
 
-    def parse_line(self, line):
         self.fields = struct.unpack(Entry.fmtstring, line)
 
     def __getitem__(self, key):
-        return self.fields[Entry.fmtmapping[key]]
+        return self.fields[self.fmtmapping[key]]
 
-def main(input_filename, search="174"):
-    entry = Entry()
+def main(filename, consolidate_date, map_regions, short_column_names):
     writer = csv.writer(sys.stdout)
     region_mapping = collections.defaultdict(lambda: "Missing", {
         "1": "Northeast",
@@ -106,9 +146,18 @@ def main(input_filename, search="174"):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) == 2:
-        main(sys.argv[1])
-    elif len(sys.argv) == 3:
-        main(sys.argv[1], sys.argv[2])
-    else:
-        raise Exception("Need argument")
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filename")
+    parser.add_argument("-d", "--consolidate-date", dest='consolidate_date',
+                        action="store_true")
+    parser.add_argument("-r", "--map-regions", dest='map_regions',
+                        action="store_true")
+    parser.add_argument("-s", "--short-column-names", dest='short_column_names',
+                        action="store_true")
+
+    main(filename=parser.filename,
+         consolidate_date=parser.consolidate_date,
+         map_regions=parser.map_regions,
+         short_column_names=parser.short_column_names)
