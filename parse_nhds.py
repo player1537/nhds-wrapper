@@ -3,6 +3,17 @@ import csv
 import sys
 import collections
 
+"""Parses and gives a unified access to all the different NHDS datasets
+
+Each dataset consists of lines of fixed-length records, that are often
+different from one year to the next. The data is retrieved from the
+National Hospital Discharge Survey conducted by the CDC and documented
+at:
+
+    http://www.cdc.gov/nchs/nhds.htm
+
+"""
+
 class Entry:
     fmt = ((1,  2, "Survey Year", "year_end"),
            (3,  1, "Newborn status"),
