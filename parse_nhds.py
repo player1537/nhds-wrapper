@@ -16,133 +16,177 @@ at:
 
 """
 
+def _(name):
+    return (name, name.lower().replace(' ', '_'))
+
 fmt = (
-    (("09", ),
-     2, "Survey Year", "year_end"),
-    (("09", ),
-     1, "Newborn status"),
-    (("09", ),
-     1, "Units for age"),
-    (("09", ),
-     2, "Age"),
-    (("09", ),
-     1, "Sex"),
-    (("09", ),
-     1, "Race"),
-    (("09", ),
-     1, "Marital status"),
-    (("09", ),
-     2, "Discharge month", "month"),
-    (("09", ),
-     1, "Discharge status"),
-    (("09", ),
-     4, "Days of care"),
-    (("09", ),
-     1, "Length of stay flag"),
-    (("09", ),
-     1, "Geographic region", "region"),
-    (("09", ),
-     1, "Number of beds"),
-    (("09", ),
-     1, "Hospital ownership"),
-    (("09", ),
-     5, "Analysis weight", "weight"),
-    (("09", ),
-     2, "First 2 digits of survey year", "year_begin"),
-    (("09", ),
-     5, "Diagnosis code #1", "dx_cd"),
-    (("09", ),
-     5, "Diagnosis code #2"),
-    (("09", ),
-     5, "Diagnosis code #3"),
-    (("09", ),
-     5, "Diagnosis code #4"),
-    (("09", ),
-     5, "Diagnosis code #5"),
-    (("09", ),
-     5, "Diagnosis code #6"),
-    (("09", ),
-     5, "Diagnosis code #7"),
-    (("09", ),
-     4, "Procedure code #1"),
-    (("09", ),
-     4, "Procedure code #2"),
-    (("09", ),
-     4, "Procedure code #3"),
-    (("09", ),
-     4, "Procedure code #4"),
-    (("09", ),
-     2, "Primary expected source of payment"),
-    (("09", ),
-     2, "Secondary expected source of payment"),
-    (("09", ),
-     3, "Diagnosis-Related Groups"),
-    (("09", ),
-     1, "Type of admission"),
-    (("09", ),
-     2, "Source of admission"),
-    (("09", ),
-     5, "Admitting diagnosis"),
-    (("09", ),
-     2, "Newline")
+    (("09", "10"),
+     2, ("Survey Year", "year_end")),
+    (("09", "10"),
+     1, _("Newborn status")),
+    (("09", "10"),
+     1, _("Units for age")),
+    (("09", "10"),
+     2, _("Age")),
+    (("09", "10"),
+     1, _("Sex")),
+    (("09", "10"),
+     1, _("Race")),
+    (("09", "10"),
+     1, _("Marital status")),
+    (("09", "10"),
+     2, ("Discharge month", "month")),
+    (("09", "10"),
+     1, _("Discharge status")),
+    (("09", "10"),
+     4, _("Days of care")),
+    (("09", "10"),
+     1, _("Length of stay flag")),
+    (("09", "10"),
+     1, ("Geographic region", "region")),
+    (("09", "10"),
+     1, _("Number of beds")),
+    (("09", "10"),
+     1, _("Hospital ownership")),
+    (("09", "10"),
+     5, ("Analysis weight", "weight")),
+    (("09", "10"),
+     2, ("First 2 digits of survey year", "year_begin")),
+    (("09", "10"),
+     5, _("Diagnosis code #1")),
+    (("09", "10"),
+     5, _("Diagnosis code #2")),
+    (("09", "10"),
+     5, _("Diagnosis code #3")),
+    (("09", "10"),
+     5, _("Diagnosis code #4")),
+    (("09", "10"),
+     5, _("Diagnosis code #5")),
+    (("09", "10"),
+     5, _("Diagnosis code #6")),
+    (("09", "10"),
+     5, _("Diagnosis code #7")),
+    (("10", ),
+     5, _("Diagnosis code #8")),
+    (("10", ),
+     5, _("Diagnosis code #9")),
+    (("10", ),
+     5, _("Diagnosis code #10")),
+    (("10", ),
+     5, _("Diagnosis code #11")),
+    (("10", ),
+     5, _("Diagnosis code #12")),
+    (("10", ),
+     5, _("Diagnosis code #13")),
+    (("10", ),
+     5, _("Diagnosis code #14")),
+    (("10", ),
+     5, _("Diagnosis code #15")),
+    (("09", "10"),
+     4, _("Procedure code #1")),
+    (("09", "10"),
+     4, _("Procedure code #2")),
+    (("09", "10"),
+     4, _("Procedure code #3")),
+    (("09", "10"),
+     4, _("Procedure code #4")),
+    (("10", ),
+     4, _("Procedure code #5")),
+    (("10", ),
+     4, _("Procedure code #6")),
+    (("10", ),
+     4, _("Procedure code #7")),
+    (("10", ),
+     4, _("Procedure code #8")),
+    (("09", "10"),
+     2, _("Primary expected source of payment")),
+    (("09", "10"),
+     2, _("Secondary expected source of payment")),
+    (("09", "10"),
+     3, _("Diagnosis-Related Groups")),
+    (("09", "10"),
+     1, _("Type of admission")),
+    (("09", "10"),
+     2, _("Source of admission")),
+    (("09", "10"),
+     5, _("Admitting diagnosis")),
 )
+
+region_mapping = collections.defaultdict(lambda: "Missing", {
+    "1": "Northeast",
+    "2": "Midwest",
+    "3": "South",
+    "4": "West"
+})
+
 
 class Entry:
     def __init__(self, line):
-        year = line[:2]
+        self._year = line[:2]
 
-        self.fmtstring = "".join(str(tup[1]) + "s"
-                                 for tup in fmt
-                                 if year in tup[0])
-        self.fmtmapping = { name: i
-                       for i, tup in enumerate(fmt)
-                       for name in tup[2:]
-                       if year in tup[0] }
+        self._fmtstring = "".join(str(length) + "s"
+                                  for (years, length, _) in fmt
+                                  if self._year in years)
 
-        self.fields = struct.unpack(Entry.fmtstring, line)
+        self._fmtmapping = { name: i
+                            for i, (years, _, names) in enumerate(fmt)
+                            for name in names
+                            if self._year in years }
+
+        self._fields = struct.unpack(self._fmtstring, line.strip("\r\n"))
 
     def __getitem__(self, key):
-        return self.fields[self.fmtmapping[key]]
+        return self._fields[self._fmtmapping[key]]
 
-def main(filename, consolidate_date, map_regions, short_column_names):
+    def columns(self, short_column_names=False, target=None):
+        if target is None:
+            target = self._year
+
+        names = [names[1] if short_column_names else names[0]
+                 for (years, _, names) in fmt
+                 if target in years]
+
+        return names
+
+    def fields(self, strip_fields=False, target=None):
+        if target is None:
+            target = self._year
+
+        return [self[name].strip() if strip_fields else self[name]
+                for (years, _, (name, _)) in fmt
+                if target in years]
+
+def main(filename, consolidate_date=False, map_regions=False,
+         short_column_names=False, strip_fields=False, estimate_count=False,
+         target=None):
     writer = csv.writer(sys.stdout)
-    region_mapping = collections.defaultdict(lambda: "Missing", {
-        "1": "Northeast",
-        "2": "Midwest",
-        "3": "South",
-        "4": "West"
-    })
-    counts = collections.defaultdict(int)
-    with open(input_filename, "r") as f:
-        for line in f:
-            entry.parse_line(line)
+    with open(filename, "r") as f:
+        for i, line in enumerate(f):
+            entry = Entry(line)
+            if i == 0:
+                columns = entry.columns(short_column_names, target)
 
-            if entry["dx_cd"][:len(search)] != search:
-                continue
+                if consolidate_date:
+                    columns += ["date"]
+                if map_regions:
+                    columns += ["region_name"]
+                if estimate_count:
+                    columns += ["count"]
 
-            number_of_discharges = int(entry["weight"].strip())
-            region = entry["region"]
-            date = entry["year_begin"] + entry["year_end"] + entry["month"]
-            diagnosis_names = ["Diagnosis code #" + str(i) for i in range(1, 8)]
-            diagnosis_codes = [entry[name] for name in diagnosis_names]
+                writer.writerow(columns)
 
-            if 0: writer.writerow([
-                date,
-                region_mapping[region],
-                number_of_discharges
-            ])
+            fields = entry.fields(strip_fields, target)
+            if consolidate_date:
+                date = entry["year_begin"] + entry["year_end"] + entry["month"]
+                fields += [date]
+            if map_regions:
+                region_name = region_mapping[entry["region"]]
+                fields += [region_name]
+            if estimate_count:
+                number_of_discharges = int(entry["weight"].strip())
+                fields += [number_of_discharges]
 
-            counts[date] += number_of_discharges
-
-    for date_str in sorted(counts.keys()):
-        date = datetime.datetime.strptime(date_str, "%Y%m")
-
-        if date.year != 2009 or date.month < 4:
-            continue
-
-        days_in_month = calendar.monthrange(date.year, date.month)[1]
-        for _ in range(days_in_month):
-            print counts[date_str] / float(days_in_month)
+            writer.writerow(fields)
 
 if __name__ == "__main__":
     import sys
@@ -156,8 +200,18 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("-s", "--short-column-names", dest='short_column_names',
                         action="store_true")
+    parser.add_argument("-S", "--strip-fields", dest="strip_fields",
+                        action="store_true")
+    parser.add_argument("-e", "--estimate-count", dest="estimate_count",
+                        action="store_true")
+    parser.add_argument("-t", "--target", dest="target",
+                        default=None)
+    args = parser.parse_args()
 
-    main(filename=parser.filename,
-         consolidate_date=parser.consolidate_date,
-         map_regions=parser.map_regions,
-         short_column_names=parser.short_column_names)
+    main(filename=args.filename,
+         consolidate_date=args.consolidate_date,
+         map_regions=args.map_regions,
+         short_column_names=args.short_column_names,
+         strip_fields=args.strip_fields,
+         estimate_count=args.estimate_count,
+         target=args.target)
