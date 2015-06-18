@@ -121,17 +121,23 @@ region_mapping = collections.defaultdict(lambda: "Missing", {
 
 
 class Entry:
-    def __init__(self, line):
+    def __init__(self, line, target=None):
         self._year = line[:2]
 
+        if target is None:
+            target = self._year
+        self._target = target
+
+        self._fmt = [spec
+                     for spec, (years, _, _) in zip(fmt, fmt)
+                     if self._year in years]
+
         self._fmtstring = "".join(str(length) + "s"
-                                  for (years, length, _) in fmt
-                                  if self._year in years)
+                                  for (years, length, _) in self._fmt)
 
         self._fmtmapping = { name: i
-                            for i, (years, _, names) in enumerate(fmt)
-                            for name in names
-                            if self._year in years }
+                            for i, (years, _, names) in enumerate(self._fmt)
+                            for name in names }
 
         self._fields = struct.unpack(self._fmtstring, line.strip("\r\n"))
 
@@ -143,7 +149,7 @@ class Entry:
             target = self._year
 
         names = [names[1] if short_column_names else names[0]
-                 for (years, _, names) in fmt
+                 for (years, _, names) in self._fmt
                  if target in years]
 
         return names
@@ -153,7 +159,7 @@ class Entry:
             target = self._year
 
         return [self[name].strip() if strip_fields else self[name]
-                for (years, _, (name, _)) in fmt
+                for (years, _, (name, _)) in self._fmt
                 if target in years]
 
 def main(filename, consolidate_date=False, map_regions=False,
