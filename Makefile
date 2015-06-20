@@ -10,6 +10,9 @@ DISEASES := 174:breast-cancer 611:lump-or-mass-in-breast 410:heart-disease \
 DISEASES_ICD9 := $(foreach disease,$(DISEASES),$(word 1,$(subst :, ,$(disease))))
 DISEASES_NAME := $(foreach disease,$(DISEASES),$(word 2,$(subst :, ,$(disease))))
 
+ICD9_BASE_URL := \
+	https://www.cms.gov/Medicare/Coding/ICD9ProviderDiagnosticCodes/Downloads
+
 .PHONY: print-%
 print-%: ; @echo $*=$($*)
 
@@ -32,9 +35,12 @@ $(addprefix download/nhds/,$(NHDS_ZIP_FILE_YEARS:=.dat)):
 	wget $(NHDS_BASE_URL)/nhds$${date}/NHDS$${date}PU.zip -O- | \
 	funzip > $@
 
+download/icd9.dat:
+	wget $(ICD9_BASE_URL)/ICD-9-CM-v32-master-descriptions.zip -O- | funzip > $@
+
 gen/as_csv/%.csv: download/nhds/%.dat
 	@mkdir -p $(dir $@)
-	python parse_nhds.py \
+	python -m nhds.parse_nhds \
 	--strip-fields \
 	--consolidate-date \
 	--short-column-names \
@@ -45,7 +51,7 @@ gen/as_csv/%.csv: download/nhds/%.dat
 define MATCH_IMS_DISEASE
 gen/match_ims/$(1).txt: gen/as_csv/2009.csv gen/as_csv/2010.csv
 	@mkdir -p $$(dir $$@)
-	python match_ims.py $$^ --match-icd9 $(2) > $$@
+	python -m nhds.match_ims $$^ --match-icd9 $(2) > $$@
 endef
 
 $(foreach disease,$(DISEASES), \

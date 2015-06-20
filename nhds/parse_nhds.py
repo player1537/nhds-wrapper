@@ -214,10 +214,4 @@ if __name__ == "__main__":
                         default=None)
     args = parser.parse_args()
 
-    main(filename=args.filename,
-         consolidate_date=args.consolidate_date,
-         map_regions=args.map_regions,
-         short_column_names=args.short_column_names,
-         strip_fields=args.strip_fields,
-         estimate_count=args.estimate_count,
-         target=args.target)
+    main(**vars(args))
